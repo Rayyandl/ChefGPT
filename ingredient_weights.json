@@ -1,16 +1,18 @@
 {
   "sugar": -1.0,
-  "milk": 0.75,
+  "milk": 1.75,
   "pepper": 2.0,
-  "salt": 1.75,
+  "salt": 2.75,
   "lemon juice": -0.5,
-  "butter": 2.25,
+  "butter": 4.25,
   "broccoli floret": -0.25,
   "chicken": 1.0,
   "honey": -0.25,
   "hickory chips": -0.25,
-  "flour": 3.5,
+  "flour": 3.25,
   "icing sugar": -0.5,
   "egg": -0.25,
-  "eggs": -0.25
+  "eggs": -0.5,
+  "oil (not butter)": -0.25,
+  "popcorn": -0.25
 }

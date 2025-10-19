@@ -10,3 +10,5 @@ timestamp,action,recipe,match_count,missing_count,matched,missing,total
 2025-10-10T17:39:57,reject,"Swedish Pancakes",4,2,"butter, flour, milk, sugar","eggs, salt",6
 2025-10-10T17:40:09,reject,"White Gravy",3,0,"butter, flour, milk","",3
 2025-10-10T17:40:16,accept,"Norwegian Pancakes",3,1,"butter, flour, milk","eggs",4
+2025-10-19T21:00:35,accept,"Popcorn (Stove Top)",2,2,"butter, salt","oil (not butter), popcorn",4
+2025-10-19T21:50:48,accept,"Norwegian Pancakes",2,2,"butter, milk","eggs, flour",4
