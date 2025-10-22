@@ -76,7 +76,7 @@ def safe_eval_list(s):
             return [parsed.strip()]
     except Exception:
         pass
-    # fallback split: try pipes/semicolons/commas/newlines
+
     parts = re.split(r"\n+|[|;]|,(?=(?:[^\"']|\"[^\"]*\"|'[^']*')*$)", text)
     parts = [p.strip().strip("\"'") for p in parts if p and p.strip()]
     return parts if parts else ([text] if text else [])
@@ -158,7 +158,7 @@ def init_spellchecker_from_words(dataset_words):
     """
     if not _SPELL_OK:
         return None
-    sp = SpellChecker(language=None, distance=2)  # strict: no English fallback
+    sp = SpellChecker(language=None, distance=2) 
     if dataset_words:
         sp.word_frequency.load_words(dataset_words)
     return sp
@@ -297,10 +297,10 @@ def greedy_search(user_ingredients, df, weights, ingredient_col="ingredients",
     df["missing_count"] = df["missing_set"].apply(len)
     df["total_ingredients"] = df[ingredient_col].apply(len)
 
-    # Hard constraints (HARD_MAX_MISSING is fixed at 3)
+    
     df = df[(df["missing_count"] <= HARD_MAX_MISSING) & (df["match_count"] >= hard_min_matches)]
 
-    # Learned score
+    
     df["score"] = df.apply(lambda r: compute_score(r, weights, alpha=alpha, beta=beta, gamma=gamma), axis=1)
 
     df = df.sort_values(
@@ -333,7 +333,7 @@ def print_full_recipe(row, name_col="name",
     print(f"🍽️  {row.get(name_col, 'Unknown')}")
     print("---------------------------------------------")
 
-    # Ingredients measurement
+    
     if measure_col in row and pd.notna(row[measure_col]):
         measures = safe_eval_list(row[measure_col])
         if measures:
@@ -346,7 +346,7 @@ def print_full_recipe(row, name_col="name",
     else:
         print("\n🧂 Ingredients + Measurement: (missing column or value)")
 
-    # Steps
+   
     if steps_col in row and pd.notna(row[steps_col]):
         steps = safe_eval_list(row[steps_col])
         if steps:
@@ -361,12 +361,14 @@ def print_full_recipe(row, name_col="name",
 
     print("=============================================\n")
 
+
 # -----------------------
 # CLI
 # -----------------------
+
 def parse_args():
     p = argparse.ArgumentParser(description="ChefGPT Greedy Search (dataset-trained spellchecker + online learning)")
-    p.add_argument("--file", default="sampled_recipes.xlsx",   # you uploaded this; change path if needed
+    p.add_argument("--file", default="sampled_recipes.xlsx",  
                    help="Path to dataset (xlsx/csv)")
     p.add_argument("--ingredient-col", default="ingredients",
                    help="Column containing ingredients (default: ingredients)")
@@ -410,6 +412,7 @@ def parse_args():
 # -----------------------
 # Main
 # -----------------------
+
 def main():
     args = parse_args()
     df = load_and_prepare(args.file, ingredient_col=args.ingredient_col)
@@ -418,6 +421,7 @@ def main():
     dataset_phrases, dataset_words_fresh = build_dataset_vocab(df, ingredient_col=args.ingredient_col)
 
     dict_path = Path(args.dict_path)
+
 
     # === Strict: only use trained dictionary (no English fallback) ===
     if args.retrain:
@@ -433,6 +437,7 @@ def main():
         dataset_phrases, _ = build_dataset_vocab(df, ingredient_col=args.ingredient_col)
         print("✅ Using saved dictionary only (no English fallback).")
 
+
     # Initialize spellchecker ONCE: ONLY with your words
     spell = None
     if not args.no_spell:
@@ -441,6 +446,7 @@ def main():
         else:
             print("⚠️  pyspellchecker not installed. Run: pip install pyspellchecker")
             print("    Continuing with phrase snapping only.\n")
+
 
     # Load weights (learning)
     weights = load_weights(WEIGHTS_PATH)
