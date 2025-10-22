@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 import tempfile
 from pathlib import Path
-from GreedySearchSetsTestV7 import (
+from ChefGPT_final import (
     load_and_prepare, greedy_search, load_dataset_words, build_dataset_vocab,
     init_spellchecker_from_words, token_correct, snap_to_dataset_phrase,
     load_weights, save_weights, update_weights_for_feedback,
