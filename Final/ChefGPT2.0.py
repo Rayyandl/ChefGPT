@@ -25,6 +25,10 @@ from typing import Optional
 
 import pandas as pd
 
+total_suggestions = 0
+accepted_suggestions = 0
+accepted_ranks = []
+
 # ──────────────────────────────────────────────────────────────
 # Constants
 # ──────────────────────────────────────────────────────────────
@@ -480,7 +484,11 @@ class AgentState:
         self.results: pd.DataFrame  = pd.DataFrame()
         self.max_missing: int       = HARD_MAX_MISSING
         self.turn: int              = 0
-
+        # 🔥 NEW METRICS
+        self.total_suggestions: int = 0
+        self.accepted_suggestions: int = 0
+        self.accepted_ranks: list[int] = []
+        
     def reset(self):
         self.ingredients = []
         self.dietary     = []
@@ -567,7 +575,26 @@ def run_agent(args):
         # ── ACTION: dispatch ───────────────────────────────────
 
         if intent["quit"]:
-            print("\n👋  Goodbye! Happy cooking.")
+            print("\n👋  Goodbye! Happy cooking.\n")
+
+            # 🔥 Compute metrics
+            if state.total_suggestions > 0:
+                success_rate = state.accepted_suggestions / state.total_suggestions
+            else:
+                success_rate = 0
+
+            if state.accepted_ranks:
+                avg_rank = sum(state.accepted_ranks) / len(state.accepted_ranks)
+            else:
+                avg_rank = 0
+
+            # 🔥 Display results
+            print("📊 Evaluation Metrics:")
+            print(f"   • Total suggestions shown: {state.total_suggestions}")
+            print(f"   • Accepted suggestions: {state.accepted_suggestions}")
+            print(f"   • Success Rate: {success_rate:.2f}")
+            print(f"   • Average Accepted Rank: {avg_rank:.2f}\n")
+
             return
 
         if intent["help"]:
@@ -602,12 +629,15 @@ def run_agent(args):
             print(f"   I'll deprioritise those ingredients next time.\n")
             continue
 
-        if intent["accept"] is not None:
+        if intent["accept"] is not None:     
             idx = intent["accept"]
             if state.results.empty or idx < 1 or idx > len(state.results):
                 print("⚠️   No suggestion at that number.")
                 continue
             row = state.results.iloc[idx - 1]
+            # 🔥 Update evaluation metrics
+            state.accepted_suggestions += 1
+            state.accepted_ranks.append(idx)
             weights = update_weights(weights, row["match_set"], row["missing_set"],
                                      accepted=True, lr_pos=args.lr_pos, lr_neg=args.lr_neg)
             save_weights(weights, WEIGHTS_PATH)
@@ -677,7 +707,8 @@ def run_agent(args):
 
         top_n = min(5, len(results))
         state.results = results.head(top_n).reset_index(drop=True)
-
+        # 🔥 Count suggestions shown to user
+        state.total_suggestions += len(state.results)
         print(f"\n✨  Found {len(results)} matching recipes. Here are my top {top_n}:\n")
         for rank, (_, row) in enumerate(state.results.iterrows(), start=1):
             print(explain_suggestion(row, rank, args.name_col, weights))
