@@ -29,9 +29,9 @@ import pandas as pd
 # Constants
 # ──────────────────────────────────────────────────────────────
 HARD_MAX_MISSING      = 2
-DICT_PATH             = Path("ChefGPT_Final/trained_dict.txt")
-WEIGHTS_PATH          = Path("ChefGPT_Final/ingredient_weights.json")
-FEEDBACK_LOG          = Path("ChefGPT_Final/feedback_log.csv")
+DICT_PATH             = Path("trained_dict.txt")
+WEIGHTS_PATH          = Path("ingredient_weights.json")
+FEEDBACK_LOG          = Path("feedback_log.csv")
 
 # Simple keyword maps for intent extraction (extend freely)
 DIETARY_KEYWORDS: dict[str, list[str]] = {
@@ -348,7 +348,11 @@ def search(user_ings, df, weights, ingredient_col="ingredients",
     # Hard filters
     r = r[(r["missing_count"] <= max_missing) & (r["match_count"] >= hard_min_matches)]
 
-    # Soft preference filters (name-based heuristic — no dedicated cuisine col assumed)
+    # Early exit — prevents the "DataFrame without columns" crash
+    if r.empty:
+        return r
+
+    # Soft preference filters (name-based heuristic)
     name_col_guess = "name"
     if dietary:
         for tag in dietary:
@@ -367,6 +371,10 @@ def search(user_ings, df, weights, ingredient_col="ingredients",
         for c in cuisine:
             r = r[r.get(name_col_guess, pd.Series(dtype=str)).str.lower().str.contains(c, na=False)
                   | r[ingredient_col].apply(lambda s: any(c in x for x in s))]
+
+    # Second early exit — soft filters may have emptied it too
+    if r.empty:
+        return r
 
     r["score"] = r.apply(lambda row: compute_score(row, weights, alpha, beta, gamma), axis=1)
     r = r.sort_values(
@@ -698,7 +706,7 @@ def _suggest_recovery(state: AgentState, args):
 
 def parse_args():
     p = argparse.ArgumentParser(description="ChefGPT Agent — conversational recipe assistant")
-    p.add_argument("--file",            default="ChefGPT_Final/sampled_recipes.xlsx")
+    p.add_argument("--file",            default="sampled_recipes.xlsx")
     p.add_argument("--ingredient-col",  default="ingredients")
     p.add_argument("--name-col",        default="name")
     p.add_argument("--measure-col",     default="ingredients_measurement")
