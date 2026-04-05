@@ -1,6 +1,4 @@
-"""
-ChefGPT Agent — conversational, reasoning-first recipe assistant.
-"""
+#ChefGPT Agent — conversational, reasoning-first recipe assistant.
 
 from __future__ import annotations
 
@@ -11,23 +9,21 @@ import os
 import re
 import sys
 import difflib
-import random
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
-
 import pandas as pd
 
 total_suggestions = 0
 accepted_suggestions = 0
 accepted_scores = []
 
-HARD_MAX_MISSING      = 3
-DICT_PATH             = Path("trained_dict.txt")
-WEIGHTS_PATH          = Path("ingredient_weights.json")
-FEEDBACK_LOG          = Path("feedback_log.csv")
+Hard_Max_Missing      = 3
+Dict_Path             = Path("trained_dict.txt")
+Weights_Path          = Path("ingredient_weights.json")
+Feedback_Log          = Path("feedback_log.csv")
 
-DIETARY_KEYWORDS: dict[str, list[str]] = {
+Dietary_Key: dict[str, list[str]] = {
     "vegetarian":  ["vegetarian", "veggie", "no meat", "meatless"],
     "vegan":       ["vegan", "plant-based", "plant based"],
     "gluten-free": ["gluten free", "gluten-free", "no gluten", "celiac"],
@@ -35,18 +31,18 @@ DIETARY_KEYWORDS: dict[str, list[str]] = {
     "quick":       ["quick", "fast", "easy", "15 min", "30 min", "simple"],
 }
 
-CUISINE_KEYWORDS: list[str] = [
+Cuisine_Key: list[str] = [
     "italian", "mexican", "indian", "chinese", "japanese", "thai",
     "french", "american", "mediterranean", "greek", "korean", "vietnamese",
 ]
 
 try:
     from spellchecker import SpellChecker
-    _SPELL_OK = True
+    Spell_Ok = True
 except Exception:
-    _SPELL_OK = False
+    Spell_Ok = False
 
-_WORD_RE = re.compile(r"[a-z']+")
+Word_Re = re.compile(r"[a-z']+")
 
 def normalize(s: str) -> str:
     return str(s).strip().lower() if s else ""
@@ -107,7 +103,7 @@ def build_dataset_vocab(df, ingredient_col="ingredients"):
         phrases |= {normalize(x) for x in s}
     words: set[str] = set()
     for ph in phrases:
-        words |= set(_WORD_RE.findall(ph))
+        words |= set(Word_Re.findall(ph))
     return phrases, words
 
 def load_dataset_words(path: Path) -> set[str]:
@@ -119,7 +115,7 @@ def save_dataset_words(words: set[str], path: Path):
     path.write_text("\n".join(sorted(words)), encoding="utf-8")
 
 def init_spell(words: set[str]) -> Optional["SpellChecker"]:
-    if not _SPELL_OK or not words:
+    if not Spell_Ok or not words:
         return None
     sp = SpellChecker(language=None, distance=2)
     sp.word_frequency.load_words(words)
@@ -197,11 +193,11 @@ def extract_intent(text: str) -> dict:
         intent["reject"] = int(m.group(1))
         return intent
 
-    for tag, keywords in DIETARY_KEYWORDS.items():
+    for tag, keywords in Dietary_Key.items():
         if any(kw in t for kw in keywords):
             intent["dietary"].append(tag)
 
-    for c in CUISINE_KEYWORDS:
+    for c in Cuisine_Key:
         if c in t:
             intent["cuisine"].append(c)
 
@@ -215,10 +211,10 @@ def extract_intent(text: str) -> dict:
         r"that is|that are|which is|which are)\b"
     )
     stripped = filler.sub(" ", t)
-    for tag, kws in DIETARY_KEYWORDS.items():
+    for tag, kws in Dietary_Key.items():
         for kw in kws:
             stripped = stripped.replace(kw, " ")
-    for c in CUISINE_KEYWORDS:
+    for c in Cuisine_Key:
         stripped = stripped.replace(c, " ")
 
     parts = re.split(r"[,+]|\band\b", stripped)
@@ -230,7 +226,7 @@ def extract_intent(text: str) -> dict:
 
     return intent
 
-def load_weights(path: Path) -> dict:
+def load_weight(path: Path) -> dict:
     if not path.exists():
         return {}
     try:
@@ -244,7 +240,7 @@ def save_weights(weights: dict, path: Path):
 def w(ing: str, weights: dict) -> float:
     return float(weights.get(ing, 0.0))
 
-def update_weights(weights, matched, missing, accepted,
+def update_weight(weights, matched, missing, accepted,
                    lr_pos=1.0, lr_neg=0.25, clip=(-5.0, 10.0)):
     lo, hi = clip
     if accepted:
@@ -258,9 +254,9 @@ def update_weights(weights, matched, missing, accepted,
     return weights
 
 def log_feedback(row, accepted: bool, name_col: str):
-    FEEDBACK_LOG.parent.mkdir(parents=True, exist_ok=True)
-    is_new = not FEEDBACK_LOG.exists()
-    with FEEDBACK_LOG.open("a", encoding="utf-8") as f:
+    Feedback_Log.parent.mkdir(parents=True, exist_ok=True)
+    is_new = not Feedback_Log.exists()
+    with Feedback_Log.open("a", encoding="utf-8") as f:
         if is_new:
             f.write("timestamp,action,recipe,match_count,missing_count,matched,missing,total\n")
         f.write(
@@ -281,7 +277,7 @@ def compute_score(row, weights, alpha=0.6, beta=0.5, gamma=0.4) -> float:
     return alpha * base + beta * boost - penalty
 
 def search(user_ings, df, weights, ingredient_col="ingredients",
-           hard_min_matches=2, max_missing=HARD_MAX_MISSING,
+           hard_min_matches=2, max_missing=Hard_Max_Missing,
            dietary=None, cuisine=None,
            alpha=0.6, beta=0.5, gamma=0.4) -> pd.DataFrame:
     user_set = {normalize(x) for x in user_ings if str(x).strip()}
@@ -395,10 +391,7 @@ HELP_TEXT = """
 └─────────────────────────────────────────────────────────┘
 """
 
-# ──────────────────────────────────────────────────────────────
 # Agent state
-# ──────────────────────────────────────────────────────────────
-
 class AgentState:
     def __init__(self):
         self.ingredients: list[str]   = []
@@ -407,7 +400,7 @@ class AgentState:
         self.results: pd.DataFrame    = pd.DataFrame()
         self.all_results: pd.DataFrame = pd.DataFrame()  # full result pool
         self.shown_indices: set[int]  = set()            # dataset row indices already shown
-        self.max_missing: int         = HARD_MAX_MISSING
+        self.max_missing: int         = Hard_Max_Missing
         self.turn: int                = 0
         self.total_suggestions: int   = 0
         self.accepted_suggestions: int = 0
@@ -420,13 +413,11 @@ class AgentState:
         self.results       = pd.DataFrame()
         self.all_results   = pd.DataFrame()
         self.shown_indices = set()
-        self.max_missing   = HARD_MAX_MISSING
+        self.max_missing   = Hard_Max_Missing
         self.turn          = 0
 
-# ──────────────────────────────────────────────────────────────
-# Pick next page of unseen results
-# ──────────────────────────────────────────────────────────────
 
+# Pick next page of unseen results
 def pick_next_page(all_results: pd.DataFrame, shown_indices: set[int]) -> pd.DataFrame:
     """Return ALL unseen matching recipes sorted best-first."""
     unseen = all_results[~all_results.index.isin(shown_indices)]
@@ -437,9 +428,8 @@ def pick_next_page(all_results: pd.DataFrame, shown_indices: set[int]) -> pd.Dat
         ascending=[False, True, False]
     ).reset_index(drop=True)
 
-# ──────────────────────────────────────────────────────────────
+
 # Ingredient resolution
-# ──────────────────────────────────────────────────────────────
 
 def resolve_ingredients(raw_list: list[str], spell, dataset_phrases: set[str],
                          snap_cutoff: float) -> tuple[list[str], list[str]]:
@@ -460,9 +450,8 @@ def resolve_ingredients(raw_list: list[str], spell, dataset_phrases: set[str],
         resolved.append(snapped)
     return resolved, messages
 
-# ──────────────────────────────────────────────────────────────
+
 # Main agent loop
-# ──────────────────────────────────────────────────────────────
 
 def _show_page(state: AgentState, name_col: str, weights: dict):
     """Pick and display the next page of unseen results."""
@@ -508,7 +497,7 @@ def run_agent(args):
         dataset_phrases, _ = build_dataset_vocab(df, args.ingredient_col)
 
     spell   = None if args.no_spell else init_spell(dataset_words)
-    weights = load_weights(WEIGHTS_PATH)
+    weights = load_weight(Weights_Path)
     state   = AgentState()
 
     print()
@@ -581,9 +570,9 @@ def run_agent(args):
                 print("⚠️   No suggestion at that number.")
                 continue
             row = state.results.iloc[idx - 1]
-            weights = update_weights(weights, row["match_set"], row["missing_set"],
+            weights = update_weight(weights, row["match_set"], row["missing_set"],
                                      accepted=False, lr_pos=args.lr_pos, lr_neg=args.lr_neg)
-            save_weights(weights, WEIGHTS_PATH)
+            save_weights(weights, Weights_Path)
             log_feedback(row, False, args.name_col)
             recipe_name = row.get(args.name_col, "that recipe")
             print(f"👎  Got it — noted that [{idx}] {recipe_name} wasn't what you wanted.")
@@ -598,9 +587,9 @@ def run_agent(args):
             row = state.results.iloc[idx - 1]
             state.accepted_suggestions += 1
             state.accepted_scores.append(row["score"])
-            weights = update_weights(weights, row["match_set"], row["missing_set"],
+            weights = update_weight(weights, row["match_set"], row["missing_set"],
                                      accepted=True, lr_pos=args.lr_pos, lr_neg=args.lr_neg)
-            save_weights(weights, WEIGHTS_PATH)
+            save_weights(weights, Weights_Path)
             log_feedback(row, True, args.name_col)
             print(f"✅  Great choice! Here's the full recipe:\n")
             print_recipe(row, name_col=args.name_col,
@@ -610,7 +599,7 @@ def run_agent(args):
             state.reset()
             continue
 
-        # ── Ingredient update ──────────────────────────────────
+        # Ingredient update
         if intent["raw_ingredients"]:
             resolved, corrections = resolve_ingredients(
                 intent["raw_ingredients"], spell, dataset_phrases, args.snap_cutoff
@@ -689,7 +678,7 @@ def parse_args():
     p.add_argument("--name-col",        default="name")
     p.add_argument("--measure-col",     default="ingredients_measurement")
     p.add_argument("--steps-col",       default="steps")
-    p.add_argument("--dict-path",       default=str(DICT_PATH))
+    p.add_argument("--dict-path",       default=str(Dict_Path))
     p.add_argument("--retrain",         action="store_true")
     p.add_argument("--no-spell",        action="store_true")
     p.add_argument("--snap-cutoff",     type=float, default=0.86)
