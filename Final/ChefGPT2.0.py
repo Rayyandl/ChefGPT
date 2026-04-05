@@ -27,7 +27,7 @@ import pandas as pd
 
 total_suggestions = 0
 accepted_suggestions = 0
-accepted_ranks = []
+accepted_scores = []
 
 # ──────────────────────────────────────────────────────────────
 # Constants
@@ -487,7 +487,7 @@ class AgentState:
         # 🔥 NEW METRICS
         self.total_suggestions: int = 0
         self.accepted_suggestions: int = 0
-        self.accepted_ranks: list[int] = []
+        self.accepted_scores: list[float] = []
         
     def reset(self):
         self.ingredients = []
@@ -583,17 +583,17 @@ def run_agent(args):
             else:
                 success_rate = 0
 
-            if state.accepted_ranks:
-                avg_rank = sum(state.accepted_ranks) / len(state.accepted_ranks)
+            if state.accepted_scores:
+                avg_score = sum(state.accepted_scores) / len(state.accepted_scores)
             else:
-                avg_rank = 0
+                avg_score = 0
 
             # 🔥 Display results
             print("📊 Evaluation Metrics:")
             print(f"   • Total suggestions shown: {state.total_suggestions}")
             print(f"   • Accepted suggestions: {state.accepted_suggestions}")
             print(f"   • Success Rate: {success_rate:.2f}")
-            print(f"   • Average Accepted Rank: {avg_rank:.2f}\n")
+            print(f"   • Average Accepted Score: {avg_score:.2f}\n")
 
             return
 
@@ -637,7 +637,7 @@ def run_agent(args):
             row = state.results.iloc[idx - 1]
             # 🔥 Update evaluation metrics
             state.accepted_suggestions += 1
-            state.accepted_ranks.append(idx)
+            state.accepted_scores.append(row["score"])
             weights = update_weights(weights, row["match_set"], row["missing_set"],
                                      accepted=True, lr_pos=args.lr_pos, lr_neg=args.lr_neg)
             save_weights(weights, WEIGHTS_PATH)
