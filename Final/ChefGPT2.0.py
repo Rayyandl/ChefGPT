@@ -502,7 +502,7 @@ def run_agent(args):
 
     print()
     print("╔══════════════════════════════════════════════╗")
-    print("║        👨‍🍳  ChefGPT Agent  v2.1             ║")
+    print("║        👨‍🍳  ChefGPT Agent                   ║")
     print("╠══════════════════════════════════════════════╣")
     print("║  Tell me what ingredients you have and I'll  ║")
     print("║  find the best recipe for you.               ║")
