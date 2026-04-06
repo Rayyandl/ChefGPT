@@ -1,20 +1,3 @@
-"""
-ChefGPT Evaluation Harness
-===========================
-Runs 30+ simulated episodes, auto-accepts the top suggestion each time,
-records Success Rate and Average Accepted Score per run, then computes
-Mean ± Std across all runs and generates a performance plot.
-
-Usage:
-    python chefgpt_eval.py --file sampled_recipes.xlsx [--retrain]
-
-The script is self-contained and imports directly from the agent module
-(chefgpt_agent.py must be in the same directory, or its functions are
-reproduced inline below so this file works standalone).
-
-All agent logic is reproduced here for portability — no import needed.
-"""
-
 from __future__ import annotations
 
 import ast
@@ -35,10 +18,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-
-# ─────────────────────────────────────────────────────────────
-# ── Reproduce agent core (so this file is self-contained) ────
-# ─────────────────────────────────────────────────────────────
 
 HARD_MAX_MISSING = 3
 WEIGHTS_PATH     = Path("ingredient_weights_eval.json")   # separate file for eval
@@ -119,10 +98,6 @@ def update_weights(weights, matched, missing, accepted,
             weights[m] = max(lo, min(hi, w(m, weights) - lr_neg))
     return weights
 
-# ─────────────────────────────────────────────────────────────
-# ── Episode scenarios ─────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
-
 # 32 scenarios with varying difficulty (number of user ingredients).
 # "easy" = many common ingredients → more matches, higher scores.
 # "hard" = few or obscure ingredients → fewer matches, lower scores.
@@ -139,6 +114,12 @@ SCENARIOS: list[dict] = [
     {"label": "Easy",  "ingredients": ["spinach", "garlic", "olive oil", "lemon", "salt", "pepper", "parmesan", "onion"]},
     {"label": "Easy",  "ingredients": ["chicken", "paprika", "garlic", "onion", "olive oil", "lemon", "oregano", "salt"]},
     {"label": "Easy",  "ingredients": ["shrimp", "garlic", "butter", "lemon", "parsley", "olive oil", "salt", "pepper"]},
+    {"label": "Easy",  "ingredients": ["pork", "apple", "onion", "garlic", "sage", "butter", "salt", "pepper", "mustard"]},
+    {"label": "Easy",  "ingredients": ["zucchini", "tomato", "onion", "garlic", "olive oil", "basil", "salt", "pepper", "parmesan"]},
+    {"label": "Easy",  "ingredients": ["chicken", "soy sauce", "ginger", "garlic", "honey", "sesame oil", "rice vinegar", "scallion"]},
+    {"label": "Easy",  "ingredients": ["cod", "lemon", "garlic", "olive oil", "parsley", "capers", "salt", "pepper", "butter"]},
+    {"label": "Easy",  "ingredients": ["lamb", "garlic", "rosemary", "olive oil", "lemon", "onion", "tomato", "red wine", "salt"]},
+    {"label": "Easy",  "ingredients": ["chocolate", "butter", "sugar", "egg", "flour", "vanilla", "cocoa", "baking soda", "salt"]},
 
     # ── Medium (5-6 ingredients) ────────────────────────────
     {"label": "Medium","ingredients": ["chicken", "garlic", "lemon", "thyme", "salt"]},
@@ -153,6 +134,12 @@ SCENARIOS: list[dict] = [
     {"label": "Medium","ingredients": ["lentil", "onion", "garlic", "cumin", "tomato"]},
     {"label": "Medium","ingredients": ["shrimp", "garlic", "butter", "lemon", "parsley"]},
     {"label": "Medium","ingredients": ["chicken", "coconut milk", "curry powder", "garlic", "ginger"]},
+    {"label": "Medium","ingredients": ["pork", "soy sauce", "ginger", "garlic", "honey"]},
+    {"label": "Medium","ingredients": ["chickpea", "garlic", "olive oil", "cumin", "lemon"]},
+    {"label": "Medium","ingredients": ["cauliflower", "garlic", "olive oil", "turmeric", "salt"]},
+    {"label": "Medium","ingredients": ["tuna", "pasta", "olive oil", "garlic", "tomato"]},
+    {"label": "Medium","ingredients": ["broccoli", "garlic", "soy sauce", "sesame oil", "ginger"]},
+    {"label": "Medium","ingredients": ["beef", "mushroom", "onion", "cream", "butter"]},
 
     # ── Hard (3-4 ingredients, uncommon combos) ─────────────
     {"label": "Hard",  "ingredients": ["tuna", "capers", "lemon"]},
@@ -165,11 +152,13 @@ SCENARIOS: list[dict] = [
     {"label": "Hard",  "ingredients": ["venison", "juniper", "rosemary"]},
     {"label": "Hard",  "ingredients": ["beet", "goat cheese", "walnut"]},
     {"label": "Hard",  "ingredients": ["squid", "chili", "garlic"]},
+    {"label": "Hard",  "ingredients": ["rabbit", "mustard", "thyme"]},
+    {"label": "Hard",  "ingredients": ["miso", "tofu", "wakame"]},
+    {"label": "Hard",  "ingredients": ["kimchi", "pork", "tofu"]},
+    {"label": "Hard",  "ingredients": ["saffron", "rice", "onion"]},
+    {"label": "Hard",  "ingredients": ["octopus", "paprika", "olive oil"]},
+    {"label": "Hard",  "ingredients": ["feta", "watermelon", "mint"]},
 ]
-
-# ─────────────────────────────────────────────────────────────
-# ── Single episode ────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
 
 def run_episode(
     scenario: dict,
@@ -240,9 +229,6 @@ def run_episode(
         "n_ingredients": len(ings),
     }
 
-# ─────────────────────────────────────────────────────────────
-# ── Full evaluation ───────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
 
 def run_evaluation(args) -> pd.DataFrame:
     print("\n╔══════════════════════════════════════════════╗")
@@ -309,10 +295,6 @@ def compute_stats(df_results: pd.DataFrame) -> dict:
         stats[f"{label}_n"]          = len(sub)
 
     return stats
-
-# ─────────────────────────────────────────────────────────────
-# ── Plot ─────────────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
 
 def make_plot(df_results: pd.DataFrame, output_path: str = "chefgpt_eval_plot.png"):
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
@@ -388,10 +370,6 @@ def make_plot(df_results: pd.DataFrame, output_path: str = "chefgpt_eval_plot.pn
     plt.close()
     print(f"\n📊  Plot saved → {output_path}")
 
-# ─────────────────────────────────────────────────────────────
-# ── Print results table ───────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
-
 def print_results_table(df_results: pd.DataFrame, stats: dict):
     print("\n" + "═" * 60)
     print("  RESULTS TABLE")
@@ -412,9 +390,6 @@ def print_results_table(df_results: pd.DataFrame, stats: dict):
               f"Avg Score: {sc:.3f}")
     print("═" * 60)
 
-# ─────────────────────────────────────────────────────────────
-# ── Interpretation ───────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
 
 def print_interpretation(stats: dict):
     print("""
