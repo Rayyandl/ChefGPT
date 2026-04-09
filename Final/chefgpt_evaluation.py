@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Track B evaluation for ChefGPT using:
 - N = 50 episodes
