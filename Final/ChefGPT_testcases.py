@@ -98,12 +98,11 @@ def update_weights(weights, matched, missing, accepted,
             weights[m] = max(lo, min(hi, w(m, weights) - lr_neg))
     return weights
 
-# 32 scenarios with varying difficulty (number of user ingredients).
-# "easy" = many common ingredients → more matches, higher scores.
-# "hard" = few or obscure ingredients → fewer matches, lower scores.
+
+# "easy" many common ingredients 
+# "hard" few or obscure ingredients
 
 SCENARIOS: list[dict] = [
-    # ── Easy (7-10 ingredients) ─────────────────────────────
     {"label": "Easy",  "ingredients": ["chicken", "garlic", "onion", "olive oil", "salt", "pepper", "lemon", "rosemary", "thyme"]},
     {"label": "Easy",  "ingredients": ["pasta", "tomato", "basil", "garlic", "olive oil", "parmesan", "salt", "pepper"]},
     {"label": "Easy",  "ingredients": ["egg", "butter", "flour", "milk", "sugar", "vanilla", "baking powder", "salt"]},
@@ -121,7 +120,6 @@ SCENARIOS: list[dict] = [
     {"label": "Easy",  "ingredients": ["lamb", "garlic", "rosemary", "olive oil", "lemon", "onion", "tomato", "red wine", "salt"]},
     {"label": "Easy",  "ingredients": ["chocolate", "butter", "sugar", "egg", "flour", "vanilla", "cocoa", "baking soda", "salt"]},
 
-    # ── Medium (5-6 ingredients) ────────────────────────────
     {"label": "Medium","ingredients": ["chicken", "garlic", "lemon", "thyme", "salt"]},
     {"label": "Medium","ingredients": ["pasta", "tomato", "basil", "garlic", "salt"]},
     {"label": "Medium","ingredients": ["beef", "onion", "garlic", "tomato", "pepper"]},
@@ -141,7 +139,6 @@ SCENARIOS: list[dict] = [
     {"label": "Medium","ingredients": ["broccoli", "garlic", "soy sauce", "sesame oil", "ginger"]},
     {"label": "Medium","ingredients": ["beef", "mushroom", "onion", "cream", "butter"]},
 
-    # ── Hard (3-4 ingredients, uncommon combos) ─────────────
     {"label": "Hard",  "ingredients": ["tuna", "capers", "lemon"]},
     {"label": "Hard",  "ingredients": ["lamb", "mint", "garlic"]},
     {"label": "Hard",  "ingredients": ["anchovy", "garlic", "olive oil"]},
@@ -197,7 +194,6 @@ def run_episode(
     n_suggestions = len(results)
 
     if results.empty:
-        # No match found → failure
         return {
             "label": label,
             "n_suggestions": 0,
@@ -207,7 +203,7 @@ def run_episode(
             "n_ingredients": len(ings),
         }
 
-    # Auto-accept the top result
+
     top = results.iloc[0]
     accepted_score = float(top["score"])
 
@@ -224,7 +220,7 @@ def run_episode(
         "label": label,
         "n_suggestions": n_suggestions,
         "hit": True,
-        "success_rate": 1.0,          # accepted top result → success
+        "success_rate": 1.0,        
         "accepted_score": accepted_score,
         "n_ingredients": len(ings),
     }
@@ -238,10 +234,10 @@ def run_evaluation(args) -> pd.DataFrame:
     df = load_and_prepare(args.file, ingredient_col=args.ingredient_col)
     print(f"✅  Loaded {len(df)} recipes from '{args.file}'")
 
-    weights: dict = {}   # start fresh for eval; no bleed-over from real sessions
+    weights: dict = {}  
 
     records = []
-    scenarios = SCENARIOS  # 32 scenarios
+    scenarios = SCENARIOS 
 
     print(f"\n🔁  Running {len(scenarios)} episodes …\n")
     print(f"{'Run':>4}  {'Label':>7}  {'#Ings':>6}  {'Hit':>4}  "
@@ -272,9 +268,6 @@ def run_evaluation(args) -> pd.DataFrame:
     df_results = pd.DataFrame(records)
     return df_results
 
-# ─────────────────────────────────────────────────────────────
-# ── Statistics ───────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
 
 def compute_stats(df_results: pd.DataFrame) -> dict:
     sr_all    = df_results["success_rate"].values
@@ -303,7 +296,6 @@ def make_plot(df_results: pd.DataFrame, output_path: str = "chefgpt_eval_plot.pn
     PALETTE = {"Easy": "#4ade80", "Medium": "#facc15", "Hard": "#f87171"}
     label_order = ["Easy", "Medium", "Hard"]
 
-    # ── Left: Score per Run ───────────────────────────────────
     ax = axes[0]
     ax.set_facecolor("#1a1d27")
 
@@ -312,7 +304,6 @@ def make_plot(df_results: pd.DataFrame, output_path: str = "chefgpt_eval_plot.pn
         ax.scatter(row["run"], row["accepted_score"],
                    color=color, s=72, zorder=3, edgecolors="white", linewidths=0.4)
 
-    # Rolling mean (window=5)
     scores = df_results["accepted_score"].values
     window = 5
     roll = np.convolve(scores, np.ones(window)/window, mode="valid")
@@ -335,7 +326,6 @@ def make_plot(df_results: pd.DataFrame, output_path: str = "chefgpt_eval_plot.pn
     ax.legend(handles=legend_patches, facecolor="#1a1d27",
               edgecolor="#2d3147", labelcolor="white", fontsize=9)
 
-    # ── Right: Score by Difficulty (box + swarm) ──────────────
     ax2 = axes[1]
     ax2.set_facecolor("#1a1d27")
 
@@ -347,7 +337,7 @@ def make_plot(df_results: pd.DataFrame, output_path: str = "chefgpt_eval_plot.pn
                          whiskerprops=dict(color=PALETTE[label]),
                          capprops=dict(color=PALETTE[label]),
                          flierprops=dict(marker="o", color=PALETTE[label], alpha=0.5))
-        # Jitter swarm
+        
         jitter = np.random.uniform(-0.12, 0.12, size=len(sub))
         ax2.scatter(i + jitter, sub, color=PALETTE[label],
                     s=52, zorder=4, edgecolors="white", linewidths=0.4, alpha=0.85)
@@ -433,9 +423,6 @@ def print_interpretation(stats: dict):
 
     print("└─────────────────────────────────────────────────────────────────┘")
 
-# ─────────────────────────────────────────────────────────────
-# ── CLI ──────────────────────────────────────────────────────
-# ─────────────────────────────────────────────────────────────
 
 def parse_args():
     p = argparse.ArgumentParser(description="ChefGPT Evaluation Harness")
@@ -465,7 +452,6 @@ def main():
     print_interpretation(stats)
     make_plot(df_results, output_path=args.plot_out)
 
-    # Save raw results CSV
     csv_out = "chefgpt_eval_results.csv"
     df_results.to_csv(csv_out, index=False)
     print(f"📄  Raw results saved → {csv_out}\n")

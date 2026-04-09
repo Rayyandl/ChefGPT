@@ -1,5 +1,4 @@
-#ChefGPT Agent — conversational, reasoning-first recipe assistant.
-
+#ChefGPT 
 from __future__ import annotations
 
 import argparse
@@ -154,7 +153,7 @@ def extract_intent(text: str) -> dict:
         "accept": None,
         "reject": None,
         "relax": False,
-        "more": False,        # ← NEW: "more" / "next" to page through results
+        "more": False,      
         "help": False,
         "quit": False,
     }
@@ -391,7 +390,6 @@ HELP_TEXT = """
 └─────────────────────────────────────────────────────────┘
 """
 
-# Agent state
 class AgentState:
     def __init__(self):
         self.ingredients: list[str]   = []
@@ -430,7 +428,6 @@ def pick_next_page(all_results: pd.DataFrame, shown_indices: set[int]) -> pd.Dat
 
 
 # Ingredient resolution
-
 def resolve_ingredients(raw_list: list[str], spell, dataset_phrases: set[str],
                          snap_cutoff: float) -> tuple[list[str], list[str]]:
     resolved, messages = [], []
@@ -452,7 +449,6 @@ def resolve_ingredients(raw_list: list[str], spell, dataset_phrases: set[str],
 
 
 # Main agent loop
-
 def _show_page(state: AgentState, name_col: str, weights: dict):
     """Pick and display the next page of unseen results."""
     page = pick_next_page(state.all_results, state.shown_indices)
@@ -466,7 +462,6 @@ def _show_page(state: AgentState, name_col: str, weights: dict):
             print("\n⚠️   Could not fetch more results. Try 'relax'.\n")
         return
 
-    # Record which results are now shown
     state.shown_indices.update(page.index.tolist())
     state.results = page
     state.total_suggestions += len(page)
@@ -546,7 +541,6 @@ def run_agent(args):
             print("🔄  Cleared! Tell me what ingredients you have.\n")
             continue
 
-        # ── "more" / "next": page through existing results ──────
         if intent["more"]:
             if state.all_results.empty:
                 print("⚠️   No results to page through yet. Tell me your ingredients first.\n")
@@ -560,9 +554,7 @@ def run_agent(args):
             if not state.ingredients:
                 print("   (No ingredients set yet — tell me what you have first.)\n")
                 continue
-            # Re-run search with relaxed constraint; reset shown history
             state.shown_indices = set()
-            # Fall through to re-search below (ingredients unchanged)
 
         if intent["reject"] is not None:
             idx = intent["reject"]
@@ -595,7 +587,7 @@ def run_agent(args):
             print_recipe(row, name_col=args.name_col,
                          measure_col=args.measure_col, steps_col=args.steps_col)
             print("Want to search again? Tell me your ingredients, or type 'quit'.\n")
-            # Reset everything now that a recipe was accepted
+
             state.reset()
             continue
 
@@ -607,14 +599,12 @@ def run_agent(args):
             if corrections:
                 print("\n".join(corrections))
 
-            # Always accumulate — ingredients persist until the user accepts a recipe
             added = [r for r in resolved if r not in state.ingredients]
             if added:
                 state.ingredients.extend(added)
                 if state.ingredients != added:
                     print(f"➕  Added: {', '.join(added)}")
 
-            # Re-search with the updated ingredient list
             state.shown_indices = set()
             state.all_results   = pd.DataFrame()
 
@@ -633,7 +623,6 @@ def run_agent(args):
             print("\n🤔  I don't see any ingredients yet. What do you have in your kitchen?\n")
             continue
 
-        # ── Run search (only when ingredients/constraints changed) ──
         if state.all_results.empty:
             print(f"\n🔍  Thinking... (ingredients: {', '.join(state.ingredients)})")
             if state.dietary or state.cuisine:
